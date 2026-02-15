@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#6366f1">
+    <title>配信記録アプリ v2.2</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="sync-manager.js"></script>
+    <script src="sync-functions.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            border: none;
+            width: 100%;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .btn-secondary {
+            background: white;
+            color: #6366f1;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            border: 2px solid #6366f1;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:active {
+            transform: scale(0.98);
+        }
+        .star-rating {
+            font-size: 2rem;
+            color: #fbbf24;
+            cursor: pointer;
+            user-select: none;
+        }
+        .star-rating span {
+            display: inline-block;
+            margin: 0 2px;
+        }
+        .tab-btn {
+            padding: 0.75rem 1.2rem;
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+        .tab-btn.active {
+            color: #6366f1;
+            border-bottom-color: #6366f1;
+        }
+        .calendar-day {
+            padding: 0.75rem;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-day.has-data {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        .calendar-day.today {
+            border: 2px solid #f59e0b;
+            font-weight: 600;
+        }
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1rem;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        .progress-fill.exceeded {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .goal-card {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+        .hidden {
+            display: none;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1.5rem 0;
+        }
+        .month-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 10px;
+        }
+        .month-selector button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .month-selector .current-month {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #6366f1;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-6 max-w-md">
+        <!-- ヘッダー -->
+        <div class="glass-card p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 配信記録 v2.2</h1>
+            <p class="text-gray-600">目標を設定して、収益を最適化</p>
+        </div>
+
+        <!-- タブナビゲーション -->
+        <div class="glass-card mb-6 overflow-x-auto">
+            <div class="flex">
+                <button class="tab-btn active" onclick="showTab('home')">🏠 ホーム</button>
+                <button class="tab-btn" onclick="showTab('input')">📝 記録</button>
+                <button class="tab-btn" onclick="showTab('calendar')">📅 カレンダー</button>
+                <button class="tab-btn" onclick="showTab('stats')">📈 統計</button>
+                <button class="tab-btn" onclick="showTab('goals')">🎯 目標</button>
+                <button class="tab-btn" onclick="showTab('settings')">⚙️ 設定</button>
+            </div>
+        </div>
+
+        <!-- ホーム画面 -->
+        <div id="home-tab" class="tab-content">
+            <!-- 目標達成状況 -->
+            <div id="goalProgress" class="glass-card p-6 mb-4 hidden">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">🎯 今月の目標達成状況</h2>
+                <div id="goalProgressContent"></div>
+            </div>
+
+            <div class="glass-card p-6 mb-4">
+                <div class="month-selector">
+                    <button onclick="changeMonth(-1)">◀ 前月</button>
+                    <div class="current-month" id="currentMonthDisplay"></div>
+                    <button onclick="changeMonth(1)">次月 ▶</button>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📊 今月のサマリー</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-sales">¥0</div>
+                        <div class="stat-label">総売上</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avg-hourly">¥0</div>
+                        <div class="stat-label">平均時給</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-sessions">0</div>
+                        <div class="stat-label">セッション数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avg-customers">0</div>
+                        <div class="stat-label">平均客数</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 mb-4">
+                <h3 class="text-lg font-bold text-gray-800 mb-3">💰 売上内訳（円グラフ）</h3>
+                <div class="chart-container">
+                    <canvas id="salesPieChart"></canvas>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="showTab('input')">
+                ➕ 新規記録を追加
+            </button>
+        </div>
+
+        <!-- 入力画面 -->
+        <div id="input-tab" class="tab-content hidden">
+            <form id="recordForm" class="glass-card p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📝 新規記録</h2>
+                
+                <!-- 基本情報 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">📅 基本情報</h3>
+                    <div class="input-group">
+                        <label>日付</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group">
+                            <label>開始時刻</label>
+                            <input type="time" id="startTime" required>
+                        </div>
+                        <div class="input-group">
+                            <label>終了時刻</label>
+                            <input type="time" id="endTime" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>デバイス</label>
+                        <select id="device">
+                            <option>PC</option>
+                            <option selected>スマホ</option>
+                            <option>タブレット</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 体調・モチベーション -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">😊 コンディション</h3>
+                    <div class="input-group">
+                        <label>体調自己評価</label>
+                        <div class="star-rating" id="healthRating" onclick="setRating('health', event)">
+                            <span data-value="1">☆</span>
+                            <span data-value="2">☆</span>
+                            <span data-value="3">☆</span>
+                            <span data-value="4">☆</span>
+                            <span data-value="5">☆</span>
+                        </div>
+                        <input type="hidden" id="health" value="3">
+                    </div>
+                    <div class="input-group">
+                        <label>モチベーション自己評価</label>
+                        <div class="star-rating" id="motivationRating" onclick="setRating('motivation', event)">
+                            <span data-value="1">☆</span>
+                            <span data-value="2">☆</span>
+                            <span data-value="3">☆</span>
+                            <span data-value="4">☆</span>
+                            <span data-value="5">☆</span>
+                        </div>
+                        <input type="hidden" id="motivation" value="3">
+                    </div>
+                </div>
+
+                <!-- 客データ -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">👥 客データ</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="input-group">
+                            <label>総客数</label>
+                            <input type="number" id="totalCustomers" min="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>コインあり</label>
+                            <input type="number" id="coinUsers" min="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>常連客</label>
+                            <input type="number" id="regularCustomers" min="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>有料移行</label>
+                            <input type="number" id="paidUsers" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>1000コイン以上客数</label>
+                        <input type="number" id="highSpenders" min="0" value="0">
+                    </div>
+                </div>
+
+                <!-- 売上データ -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">💰 売上データ</h3>
+                    <div class="input-group">
+                        <label>総売上（円）</label>
+                        <input type="number" id="totalSales" min="0" value="0">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="input-group">
+                            <label>入場料</label>
+                            <input type="number" id="entranceFee" min="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>チップ</label>
+                            <input type="number" id="tips" min="0" value="0">
+                        </div>
+                        <div class="input-group">
+                            <label>特別報酬</label>
+                            <input type="number" id="specialReward" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 行動ログ -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">📋 行動ログ</h3>
+                    <div class="input-group">
+                        <label>トークテーマ</label>
+                        <input type="text" id="talkTheme" placeholder="例: 天気、趣味">
+                    </div>
+                    <div class="input-group">
+                        <label>営業導線</label>
+                        <select id="salesApproach">
+                            <option>甘め</option>
+                            <option>雑談</option>
+                            <option>直球</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>テンション帯</label>
+                        <select id="tension">
+                            <option>低</option>
+                            <option>中</option>
+                            <option>高</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>成功トークメモ</label>
+                        <textarea id="successMemo" rows="2" placeholder="うまくいった会話内容"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>失敗トークメモ</label>
+                        <textarea id="failureMemo" rows="2" placeholder="改善すべき点"></textarea>
+                    </div>
+                </div>
+
+                <!-- 外部要因 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">🌍 外部要因</h3>
+                    <div class="input-group">
+                        <label>イベント有無</label>
+                        <select id="hasEvent">
+                            <option value="false">なし</option>
+                            <option value="true">あり</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>給料日前後</label>
+                        <select id="payday">
+                            <option>通常</option>
+                            <option>前</option>
+                            <option>後</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">💾 保存する</button>
+            </form>
+        </div>
+
+        <!-- カレンダー画面 -->
+        <div id="calendar-tab" class="tab-content hidden">
+            <div class="glass-card p-6 mb-4">
+                <div class="month-selector">
+                    <button onclick="changeCalendarMonth(-1)">◀ 前月</button>
+                    <div class="current-month" id="calendarMonthDisplay"></div>
+                    <button onclick="changeCalendarMonth(1)">次月 ▶</button>
+                </div>
+                <div id="calendarGrid"></div>
+            </div>
+
+            <div id="dayDetail" class="glass-card p-6 hidden">
+                <h3 class="text-lg font-bold text-gray-800 mb-3">📊 詳細データ</h3>
+                <div id="dayDetailContent"></div>
+            </div>
+        </div>
+
+        <!-- 統計画面 -->
+        <div id="stats-tab" class="tab-content hidden">
+            <div class="glass-card p-6 mb-4">
+                <div class="month-selector">
+                    <button onclick="changeStatsMonth(-1)">◀ 前月</button>
+                    <div class="current-month" id="statsMonthDisplay"></div>
+                    <button onclick="changeStatsMonth(1)">次月 ▶</button>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 mb-4">📈 統計分析</h2>
+                
+                <h3 class="text-lg font-semibold text-gray-700 mb-3">💰 売上内訳（円グラフ）</h3>
+                <div class="chart-container">
+                    <canvas id="salesBreakdownChart"></canvas>
+                </div>
+
+                <h3 class="text-lg font-semibold text-gray-700 mb-3 mt-6">📊 日別売上推移</h3>
+                <div class="chart-container">
+                    <canvas id="dailySalesChart"></canvas>
+                </div>
+
+                <h3 class="text-lg font-semibold text-gray-700 mb-3 mt-6">👥 客ファネル分析（円グラフ）</h3>
+                <div class="chart-container">
+                    <canvas id="customerFunnelChart"></canvas>
+                </div>
+
+                <h3 class="text-lg font-semibold text-gray-700 mb-3 mt-6">📅 曜日別平均時給</h3>
+                <div class="chart-container">
+                    <canvas id="weekdayChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目標設定画面 -->
+        <div id="goals-tab" class="tab-content hidden">
+            <div class="glass-card p-6 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">🎯 目標設定</h2>
+                
+                <div class="goal-card">
+                    <h3 class="text-lg font-bold mb-2">💡 目標を設定して達成率を追跡</h3>
+                    <p class="text-sm opacity-90">月ごとに目標を設定できます。達成状況はホーム画面に表示されます。</p>
+                </div>
+
+                <form id="goalForm">
+                    <div class="input-group">
+                        <label>対象月</label>
+                        <input type="month" id="goalMonth" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>月間売上目標（円）</label>
+                        <input type="number" id="goalMonthlySales" min="0" placeholder="例: 500000">
+                    </div>
+
+                    <div class="input-group">
+                        <label>目標時給（円）</label>
+                        <input type="number" id="goalHourlyWage" min="0" placeholder="例: 15000">
+                    </div>
+
+                    <div class="input-group">
+                        <label>月間セッション数目標</label>
+                        <input type="number" id="goalSessions" min="0" placeholder="例: 20">
+                    </div>
+
+                    <div class="input-group">
+                        <label>有料移行率目標（%）</label>
+                        <input type="number" id="goalConversionRate" min="0" max="100" step="0.1" placeholder="例: 30">
+                    </div>
+
+                    <button type="submit" class="btn-primary">💾 目標を保存</button>
+                </form>
+
+                <div class="mt-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-3">📋 保存済み目標</h3>
+                    <div id="savedGoalsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <!-- 設定・バックアップ画面 -->
+        <div id="settings-tab" class="tab-content hidden">
+            <div class="glass-card p-6 mb-4">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">⚙️ 設定とバックアップ</h2>
+                
+                <!-- Google スプレッドシート同期 -->
+                <div id="sync-settings-section"></div>
+                <!-- データ統計 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">📊 データ統計</h3>
+                    <button onclick="showDataStats()" class="btn-secondary" style="width: 100%;">
+                        📈 データ統計を表示
+                    </button>
+                </div>
+
+                <!-- バックアップ -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">💾 バックアップ</h3>
+                    <p class="text-sm text-gray-600 mb-3">
+                        データを安全に保存して、機種変更やブラウザ変更時に復元できます
+                    </p>
+                    
+                    <button onclick="exportToJSON()" class="btn-primary mb-3">
+                        📥 JSONでバックアップ（推奨）
+                    </button>
+                    
+                    <button onclick="exportToCSV()" class="btn-secondary mb-3" style="width: 100%;">
+                        📊 CSVでエクスポート
+                    </button>
+                    
+                    <button onclick="generateSheetsData()" class="btn-secondary" style="width: 100%;">
+                        📋 Googleスプレッドシートにコピー
+                    </button>
+                </div>
+
+                <!-- 復元 -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">📂 復元・インポート</h3>
+                    <p class="text-sm text-gray-600 mb-3">
+                        バックアップファイル（JSON）からデータを復元します
+                    </p>
+                    
+                    <input type="file" id="importFile" accept=".json" onchange="importFromJSON(event)" style="display: none;">
+                    <button onclick="document.getElementById('importFile').click()" class="btn-secondary" style="width: 100%;">
+                        📁 ファイルから復元
+                    </button>
+                </div>
+
+                <!-- 注意事項 -->
+                <div style="background: #fef3c7; padding: 15px; border-radius: 10px;">
+                    <h4 style="color: #d97706; margin-top: 0; font-size: 1em;">⚠️ 重要な注意事項</h4>
+                    <ul style="font-size: 0.9em; line-height: 1.6; color: #6b7280; padding-left: 20px; margin: 0;">
+                        <li>ブラウザのキャッシュクリアでデータが消える可能性があります</li>
+                        <li>定期的にバックアップを取ることを強く推奨します</li>
+                        <li>機種変更前には必ずバックアップしてください</li>
+                        <li>JSONファイルは安全な場所（Google Drive等）に保存してください</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!-- Google スプレッドシート同期設定 -->
+<div class="glass-card p-6 mb-6">
+    <h3 class="text-xl font-bold mb-4 flex items-center">
+        📊 Googleスプレッドシート自動同期
+    </h3>
+    
+    <div class="input-group">
+        <label>スクリプトURL</label>
+        <input type="url" id="gas-script-url" placeholder="https://script.google.com/macros/s/..." class="text-sm">
+        <p class="text-xs text-gray-500 mt-1">Google Apps ScriptのウェブアプリURLを入力</p>
+    </div>
+    
+    <div class="flex items-center mb-4">
+        <input type="checkbox" id="auto-sync-enabled" class="mr-2">
+        <label for="auto-sync-enabled" class="cursor-pointer">✓ データ入力後に自動同期</label>
+    </div>
+    
+    <div class="flex items-center mb-4">
+        <input type="checkbox" id="wifi-only-sync" class="mr-2">
+        <label for="wifi-only-sync" class="cursor-pointer">📶 WiFi接続時のみ同期</label>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <button onclick="testConnection()" class="btn-secondary">
+            🔌 接続テスト
+        </button>
+        <button onclick="manualSync()" class="btn-secondary">
+            🔄 今すぐ同期
+        </button>
+    </div>
+    
+    <div class="bg-gray-50 p-4 rounded-lg">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-semibold">同期ステータス:</span>
+            <span id="sync-status" class="sync-status idle">⏸️ 待機中</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-semibold">最終同期:</span>
+            <span id="last-sync-time" class="text-sm text-gray-600">未同期</span>
+        </div>
+        <div id="pending-count" class="text-xs text-orange-600 mt-2" style="display: none;"></div>
+    </div>
+</div>
+
+<style>
+.sync-status {
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+}
+.sync-status.idle {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+.sync-status.syncing {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.sync-status.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+.sync-status.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+</style>
